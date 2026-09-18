@@ -3,32 +3,49 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Forum Prototype</title>
+    <title>Forum</title>
     <link rel="stylesheet" href="style.css">
 </head>
 <body>
     <header>
-        <h1>Community Forum</h1>
-        <p>Join the discussion</p>
+        <h1>Help Center</h1>
+        <p>Tips, Guides, and Resources</p>
     </header>
 
     <main>
-        <section class="post-form-container">
-            <h2>Create a New Post</h2>
+        <!-- Public Submission Form -->
+        <section class="post-form-container" id="submit-section">
+            <h2>Submit a Helpful Post</h2>
             <form id="post-form">
                 <input type="text" id="post-title" placeholder="Post Title" required>
-                <textarea id="post-content" rows="4" placeholder="What's on your mind?" required></textarea>
-                <button type="submit">Post</button>
+                <select id="post-category" required>
+                    <option value="" disabled selected>Select a category...</option>
+                    <option value="Tips">Tips</option>
+                    <option value="Games Sites">Games Sites</option>
+                    <option value="How To">How To</option>
+                </select>
+                <textarea id="post-content" rows="4" placeholder="Share your knowledge..." required></textarea>
+                <button type="submit">Submit</button>
             </form>
+            <p id="success-message" class="hidden">Thanks!</p>
         </section>
 
+        <!-- Admin Dashboard (Hidden by default) -->
+        <section class="admin-container hidden" id="admin-dashboard">
+            <h2>Admin Dashboard</h2>
+            <div id="pending-feed"></div>
+        </section>
+
+        <!-- Public Feed -->
         <section class="feed-container">
-            <h2>Recent Posts</h2>
-            <div id="forum-feed">
-                <!-- Posts will be generated here by JavaScript -->
-            </div>
+            <h2>Posts</h2>
+            <div id="forum-feed"></div>
         </section>
     </main>
+
+    <footer>
+        <button id="admin-login-btn" class="text-btn">Admin Login</button>
+    </footer>
 
     <script src="script.js"></script>
 </body>
