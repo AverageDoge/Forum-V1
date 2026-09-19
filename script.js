@@ -6,7 +6,7 @@ document.addEventListener('DOMContentLoaded', () => {
     const adminLoginBtn = document.getElementById('admin-login-btn');
     const successMsg = document.getElementById('success-message');
 
-    // Your Cloudflare Worker URL
+    // WARNING: Make sure there is NO slash at the very end of this URL
     const API_URL = 'https://white-band-1ffd.michael-le.workers.dev';
     
     let isAdmin = false;
@@ -14,37 +14,53 @@ document.addEventListener('DOMContentLoaded', () => {
     // Load posts from the database on startup
     fetchPosts();
 
-    // 1. Submit a post to the database
+    // 1. Submit a post
     postForm.addEventListener('submit', async function(e) {
         e.preventDefault();
-
-        const newPost = {
-            title: document.getElementById('post-title').value,
-            category: document.getElementById('post-category').value,
-            content: document.getElementById('post-content').value,
-            date: new Date().toLocaleDateString(),
-            status: 'pending' // Always pending first
-        };
-
-        // Send to Cloudflare Worker
-        await fetch(`${API_URL}/posts`, {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify(newPost)
-        });
-
-        postForm.reset();
-        successMsg.classList.remove('hidden');
-        setTimeout(() => successMsg.classList.add('hidden'), 3000);
         
-        fetchPosts();
+        const submitBtn = postForm.querySelector('button');
+        submitBtn.innerText = "Sending..."; // Visual feedback that it clicked
+
+        try {
+            const newPost = {
+                title: document.getElementById('post-title').value,
+                category: document.getElementById('post-category').value,
+                content: document.getElementById('post-content').value,
+                date: new Date().toLocaleDateString(),
+                status: 'pending' 
+            };
+
+            const response = await fetch(`${API_URL}/posts`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(newPost)
+            });
+
+            const data = await response.json();
+
+            // If the Cloudflare Worker sent back an error, pop it up
+            if (!response.ok || data.error) {
+                throw new Error(data.error || `Server responded with ${response.status}`);
+            }
+
+            postForm.reset();
+            successMsg.classList.remove('hidden');
+            setTimeout(() => successMsg.classList.add('hidden'), 3000);
+            
+            fetchPosts();
+        } catch (error) {
+            // POP UP THE ERROR ON SCREEN
+            alert("Error submitting post: " + error.message);
+        } finally {
+            submitBtn.innerText = "Submit for Review";
+        }
     });
 
     // 2. Admin Login
     adminLoginBtn.addEventListener('click', () => {
         if (!isAdmin) {
             const password = prompt("Enter Admin Password:");
-            if (password === 'admin') { // You can change this later
+            if (password === 'admin') { 
                 isAdmin = true;
                 adminDashboard.classList.remove('hidden');
                 adminLoginBtn.innerText = "Logout Admin";
@@ -60,24 +76,34 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     });
 
-    // 3. Fetch Posts from Database
+    // 3. Fetch Posts
     async function fetchPosts() {
         try {
+            forumFeed.innerHTML = '<p>Loading posts...</p>';
+            
             const response = await fetch(`${API_URL}/posts`);
-            const posts = await response.json();
-            renderPosts(posts);
+            const data = await response.json();
+
+            if (!response.ok || data.error) {
+                throw new Error(data.error || `Server responded with ${response.status}`);
+            }
+
+            renderPosts(data);
         } catch (error) {
-            console.error("Error fetching posts:", error);
+            forumFeed.innerHTML = `<p style="color: red;">Failed to load posts. Error: ${error.message}</p>`;
         }
     }
 
-    // 4. Render Posts to the screen
+    // 4. Render Posts
     function renderPosts(posts) {
         forumFeed.innerHTML = '';
         pendingFeed.innerHTML = '';
 
-        const approvedPosts = posts.filter(p => p.status === 'approved');
-        const pendingPosts = posts.filter(p => p.status === 'pending');
+        // If the database returns nothing, ensure posts is an empty array
+        const safePosts = Array.isArray(posts) ? posts : [];
+        
+        const approvedPosts = safePosts.filter(p => p.status === 'approved');
+        const pendingPosts = safePosts.filter(p => p.status === 'pending');
 
         if (approvedPosts.length === 0) {
             forumFeed.innerHTML = '<p>No approved posts yet.</p>';
@@ -94,7 +120,7 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     }
 
-    // Helper to generate HTML
+    // Helper
     function createPostHTML(post, isPendingAdminView) {
         const div = document.createElement('div');
         div.className = 'forum-post';
@@ -117,21 +143,25 @@ document.addEventListener('DOMContentLoaded', () => {
         return div;
     }
 
-    // 5. Admin Actions (Approve or Reject)
+    // 5. Admin Actions
     window.moderatePost = async function(id, action) {
-        if (action === 'approved') {
-            await fetch(`${API_URL}/approve`, {
+        try {
+            const endpoint = action === 'approved' ? '/approve' : '/delete';
+            const response = await fetch(`${API_URL}${endpoint}`, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ id: id })
             });
-        } else if (action === 'rejected') {
-            await fetch(`${API_URL}/delete`, {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ id: id })
-            });
+
+            const data = await response.json();
+            
+            if (!response.ok || data.error) {
+                throw new Error(data.error || `Server responded with ${response.status}`);
+            }
+            
+            fetchPosts(); 
+        } catch (error) {
+            alert("Error updating post: " + error.message);
         }
-        fetchPosts(); // Refresh the feed
     };
 });
