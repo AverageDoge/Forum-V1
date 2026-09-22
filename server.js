@@ -8,10 +8,18 @@ const app = express();
 app.use(cors({ origin: '*' }));
 app.use(express.json());
 
-// Set up the TiDB Connection
-// Render will grab the DATABASE_URL environment variable we set later
-const pool = mysql.createPool(process.env.DATABASE_URL);
-
+// Set up the TiDB Connection with forced SSL
+const pool = mysql.createPool({
+    host: 'gateway01.us-west-2.prod.aws.tidbcloud.com',
+    port: 4000,
+    user: 'Zc2V1gRLorxnRJM.root',
+    password: 'eKu60gKqZow2rRZa',
+    database: 'forum_db',
+    ssl: {
+        minVersion: 'TLSv1.2',
+        rejectUnauthorized: true
+    }
+});
 // Route: Get all posts
 app.get('/posts', async (req, res) => {
     try {
