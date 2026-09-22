@@ -6,8 +6,8 @@ document.addEventListener('DOMContentLoaded', () => {
     const adminLoginBtn = document.getElementById('admin-login-btn');
     const successMsg = document.getElementById('success-message');
 
-    // WARNING: Make sure there is NO slash at the very end of this URL
-    const API_URL = 'https://white-band-1ffd.michael-le.workers.dev';
+    // REPLACE THIS WITH YOUR RENDER.COM URL
+    const API_URL = 'https://forum-v1.onrender.com';
     
     let isAdmin = false;
 
@@ -38,7 +38,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
             const data = await response.json();
 
-            // If the Cloudflare Worker sent back an error, pop it up
+            // If the Render server sent back an error, pop it up
             if (!response.ok || data.error) {
                 throw new Error(data.error || `Server responded with ${response.status}`);
             }
