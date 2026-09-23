@@ -127,3 +127,29 @@ footer {
     background: none;
     color: #7f8c8d;
 }
+.category-filters {
+    display: flex;
+    gap: 10px;
+    margin-bottom: 20px;
+    flex-wrap: wrap;
+}
+
+.cat-btn {
+    padding: 8px 16px;
+    border: 1px solid #007bff;
+    background-color: transparent;
+    color: #007bff;
+    border-radius: 20px;
+    cursor: pointer;
+    font-weight: bold;
+    transition: all 0.2s ease;
+}
+
+.cat-btn:hover {
+    background-color: #e6f0ff;
+}
+
+.cat-btn.active {
+    background-color: #007bff;
+    color: white;
+}
