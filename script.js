@@ -5,13 +5,25 @@ document.addEventListener('DOMContentLoaded', () => {
     const adminDashboard = document.getElementById('admin-dashboard');
     const adminLoginBtn = document.getElementById('admin-login-btn');
     const successMsg = document.getElementById('success-message');
+    const filterButtons = document.querySelectorAll('.cat-btn');
 
-    // REPLACE THIS WITH YOUR RENDER.COM URL
     const API_URL = 'https://forum-v1.onrender.com';
     
     let isAdmin = false;
+    let cachedPosts = []; 
+    let currentCategory = 'All'; 
 
-    // Load posts from the database on startup
+    // Category button click handlers
+    filterButtons.forEach(btn => {
+        btn.addEventListener('click', () => {
+            filterButtons.forEach(b => b.classList.remove('active'));
+            btn.classList.add('active');
+            
+            currentCategory = btn.getAttribute('data-category');
+            renderPosts(cachedPosts); 
+        });
+    });
+
     fetchPosts();
 
     // 1. Submit a post
@@ -19,7 +31,7 @@ document.addEventListener('DOMContentLoaded', () => {
         e.preventDefault();
         
         const submitBtn = postForm.querySelector('button');
-        submitBtn.innerText = "Sending..."; // Visual feedback that it clicked
+        submitBtn.innerText = "Sending...";
 
         try {
             const newPost = {
@@ -38,7 +50,6 @@ document.addEventListener('DOMContentLoaded', () => {
 
             const data = await response.json();
 
-            // If the Render server sent back an error, pop it up
             if (!response.ok || data.error) {
                 throw new Error(data.error || `Server responded with ${response.status}`);
             }
@@ -49,7 +60,6 @@ document.addEventListener('DOMContentLoaded', () => {
             
             fetchPosts();
         } catch (error) {
-            // POP UP THE ERROR ON SCREEN
             alert("Error submitting post: " + error.message);
         } finally {
             submitBtn.innerText = "Submit for Review";
@@ -88,30 +98,33 @@ document.addEventListener('DOMContentLoaded', () => {
                 throw new Error(data.error || `Server responded with ${response.status}`);
             }
 
-            renderPosts(data);
+            cachedPosts = Array.isArray(data) ? data : [];
+            renderPosts(cachedPosts);
         } catch (error) {
             forumFeed.innerHTML = `<p style="color: red;">Failed to load posts. Error: ${error.message}</p>`;
         }
     }
 
-    // 4. Render Posts
+    // 4. Render Posts filtered by current selected category
     function renderPosts(posts) {
         forumFeed.innerHTML = '';
-        pendingFeed.innerHTML = '';
+        if (pendingFeed) pendingFeed.innerHTML = '';
 
-        // If the database returns nothing, ensure posts is an empty array
-        const safePosts = Array.isArray(posts) ? posts : [];
-        
-        const approvedPosts = safePosts.filter(p => p.status === 'approved');
-        const pendingPosts = safePosts.filter(p => p.status === 'pending');
+        const approvedPosts = posts.filter(p => p.status === 'approved');
+        const pendingPosts = posts.filter(p => p.status === 'pending');
 
-        if (approvedPosts.length === 0) {
-            forumFeed.innerHTML = '<p>No approved posts yet.</p>';
+        // Filter approved posts by selected category
+        const filteredApproved = currentCategory === 'All' 
+            ? approvedPosts 
+            : approvedPosts.filter(p => p.category === currentCategory);
+
+        if (filteredApproved.length === 0) {
+            forumFeed.innerHTML = `<p>No posts found in category "${currentCategory}".</p>`;
         } else {
-            approvedPosts.forEach(post => forumFeed.appendChild(createPostHTML(post, false)));
+            filteredApproved.forEach(post => forumFeed.appendChild(createPostHTML(post, false)));
         }
 
-        if (isAdmin) {
+        if (isAdmin && pendingFeed) {
             if (pendingPosts.length === 0) {
                 pendingFeed.innerHTML = '<p>No posts pending approval.</p>';
             } else {
@@ -120,7 +133,7 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     }
 
-    // Helper
+    // Helper to generate post cards
     function createPostHTML(post, isPendingAdminView) {
         const div = document.createElement('div');
         div.className = 'forum-post';
