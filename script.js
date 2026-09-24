@@ -115,8 +115,8 @@ document.addEventListener('DOMContentLoaded', () => {
 
         // Filter approved posts by selected category
         const filteredApproved = currentCategory === 'All' 
-            ? approvedPosts 
-            : approvedPosts.filter(p => p.category === currentCategory);
+    ? approvedPosts 
+    : approvedPosts.filter(p => p.category && p.category.trim().toLowerCase() === currentCategory.trim().toLowerCase());
 
         if (filteredApproved.length === 0) {
             forumFeed.innerHTML = `<p>No posts found in category "${currentCategory}".</p>`;
